@@ -1,0 +1,26 @@
+# (PART) Workflows {-}
+
+# Example workflow {#example-workflow}
+
+```{r setup, echo=FALSE, results="asis"}
+library(rebook)
+chapterPreamble()
+```
+
+
+## GlobalPatterns
+
+```{r, message=FALSE}
+library(mia)
+# Example how to load data
+data("GlobalPatterns", package="mia")
+
+GlobalPatterns
+```
+
+
+## Session Info {-}
+
+```{r sessionInfo, echo=FALSE, results='asis'}
+rebook::prettySessionInfo()
+```
