@@ -135,7 +135,10 @@ jobs:
           ## https://github.com/r-lib/remotes/issues/296
           ## Ideally, all dependencies should get installed in the first pass.
 
+          # Remove when 0.60.1 available
+          remotes::install_github("HenrikBengtsson/matrixStats", ref="develop")
           BiocManager::install("HDF5Array")
+          BiocManager::install("microbiome/microbiomeDataSets")
           BiocManager::install("fionarhuang/TreeSummarizedExperiment")
 
           ## Pass #1 at installing dependencies
