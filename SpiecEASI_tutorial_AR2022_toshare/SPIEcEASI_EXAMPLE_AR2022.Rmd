@@ -1,0 +1,574 @@
+---
+title: "Using SpiecEASI to analyse microbiome ecological networks"
+output:
+  html_document:
+    df_print: paged
+---
+
+# INTRODUCTION
+
+Microbiomes form ecological networks just like macro-ecological communities - Some species tend to depend on each other, others are competitors that can scarcely exist in the same community for long. Working with microbiomes as ecological networks is a powerful analytical method for two reasons:
+
+1) It enables us to use the rich set of tools from theoretical ecology to make predictions about whole-microbiome-level qualities, such as diversity and stability, which can have important consequences for the host. For example, measures of network connectivity and positive vs. negative (dependant vs. competitive) link-ratio have been traditionally linked with alpha diversity and stability in various ecological networks. Alpha diversity and stability of the gut microbiome on the other hand have been shown to be positively related to human health.
+
+2) Viewing microbiome as an ecological network can prove a useful tool for simplifying microbiome data. Microbiomes typically consist of thousands of unique sequence variants ("species"), often much more than the number of samples in the data. Consequently, microbiome variation is enormously multidimensional and this can be challenging for many analytical/computational methods. However, by viewing the microbiome as an ecological network, we can use network clustering methods to make simplified versions of this data, which should have less unique elements (clusters instead of "species") but contain as much of the information of the original variation as possible. We can do this  by assessing which microbial taxa tend to co-occur with each other to the extent that we might as well consider them "the same thing" in terms of whole-microbiome variation. 
+
+Importantly, ecological networks can be very complex, and depict various different relationships (e.g. trophic relationships, competitive relationships) with symmetric or non-symmetric outputs for each species pair (e.g. "symbiont": +/+,"commensal": +/0, "parasite": +/-, "competitor": -/-). For microbiomes, we rarely have real data on the actual ecological relationships among microbes, and thus are limited in using the simplest version of ecological networks: The co-occurrence network. This network has only symmetrical measures of co-occurrence for each pair of microbial sequence variants, that is a number that describes how often they co-occur in same hosts across the population of hosts. Here, we assume that microbes with competitive relationships have negative co-occurrence (negative links in the network), as they are likely to not exist in the same hosts through to one out-competing the other. Similarly, microbes with dependent relationships have positive co-occurrence (positive links in the network), as they are likely to exist in the same hosts as they may be less likely to persist without each other. 
+
+Lastly, it is important to note that the patterns of which microbes end up living inside which hosts are not only determined by the ecological relationships between microbes, but also by processes of transmission/dispersal (who can get where) and selective forces induced by hosts (e.g the pH of host gut selecting for acidophilic bacteria). Consequently co-occurrence is a crude measure of ecological relationships among microbes. When we see any patterns of co-occurrence or clustering of microbes across hosts, we might want to further ask ourselves whether they are likely driven by differences between hosts or differences between microbes. In either case, co-occurrence networks provide the first necessary step to identify these patterns and they can nevertheless be used as a tool to simplify microbiome variation regardless of their driving forces.
+
+# TUTORIAL:
+
+Here we will walk through the steps of 
+a) making a co-occurrence network from microbiome data, 
+b) examining and visualizing it to identify ecologically relevant patterns, and 
+c) clustering it to create a simplified version of the microbiome data.
+
+We will use a method called SpiecEASI (SParse InversE Covariance Estimation for Ecological Association Inference, Kurtz et al., 2015). This method uses a regression approach to estimate the inverse covariance matrix from sequencing data. Since microbiome data is typically "sparse", meaning that the number of observations (taxa) far exceeds the number of dimensions (hosts/samples), traditional methods of estimating correlation would be prone to overfitting. This is why SpiecEASI works with an assumption of sparsity (the algorithm assumes by default that the network has few edges) AND uses a bootstrapping method (called Stability Approach to Regularization Selection, or "StARS") to define a "penalty parameter" to counter-act over-fitting by maximizing the stability of inference across randomly samples sub-networks.
+
+We will use igraph-package to measure and plot the networks and a custom-build analysis to determine the optimal simplification parameters to retain the variability of the microbiome data while compressing it to clusters.
+
+
+### 1. Install and load packages
+
+SpiecEASI installation requires tools to compile packages from source code. Some Mac-users might face trouble installing spieceasi from source code due to a missing gfortran update. 
+
+If you are a Mac-user, make sure you have development tools required for package compilation, mainly XCode installed on your computer. See: https://mac.r-project.org/tools/index.html 
+
+If you use MacOS Monterey (Intel of M1 chip), download newest gfortran 12.1 specific for Intel/M1-chip from here: https://github.com/fxcoudert/gfortran-for-macOS/releases.
+
+This tutorial was built on macOS Monterey 12.31 (M1 chip),
+using: R 4.2.0, RStudio 2022.02.3, with gfortran 12.1
+main packages used here: spieceasi 1.1.2, phyloseq 1.40, microbiome 1.17.42, igraph 1.3.2
+
+- Install packages
+```{r}
+
+#SpiecEASI
+#options(buildtools.check = function(action) TRUE) #this is to work around a bug in RStudio, which disables devtools to use Xcode
+#library(devtools)
+#install_github("zdk123/SpiecEasi")
+
+#microbiome
+#install_github("microbiome/microbiome") 
+
+#phyloseq
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#BiocManager::install("phyloseq")
+
+#igraph:
+#install.packages("igraph")
+
+#patchwork
+#install.packages("patchwork")
+
+#seqtime
+#install_github("hallucigenia-sparsa/seqtime") 
+
+```
+- Load packages
+```{r}
+library(SpiecEasi, quietly=T)
+library(microbiome,quietly=T)
+library(phyloseq,quietly=T)
+library(igraph,quietly=T)
+library(seqtime,quietly=T)
+library(patchwork)
+```
+### 2. Read in data
+
+This example data set consists of 397 gut microbiome samples from 190 individual wild wood mice (Apodemus sylvaticus), and additionally 25 samples of soil microbiome, collected from Holly Hill qnd nearby sites in Wytham Woods, Oxford, UK in 2018-2019. Microbiomes were profiled using ~400 bp long V4-V5 region of 16S rRNA gene (515F-926R primers). Prior to this code the microbiome data went through these processing steps:
+
+i) Sequences were processed and sequenc variants (ASVs) were inferred using dada2 algorithm (Callahan et al., 2016a).
+
+ii) Sequences were aligned and taxonomy was assigned against Silva 138 genomic data base, following the F1000-pipeline Callahan et al., 2016n) 
+
+iii) Data was cleared of contamination using decontam-function (Davis et al., 2018)
+
+iv) Based on sample completeness curves derived with iNext package, mouse microbiomes samples with <6000 reads and soil samples with <800 reads were dropped 
+
+v) Microbial sequence variants were filtered out if they belonged to non-gut microbial taxa (Cyanobacteria, Mitochondria) or if they were extremely rare across the data (singletons and doubletons)
+```{r}
+
+phy<-readRDS("HollyHill_microbiome_EXAMPLE.rds")
+
+
+```
+- Simplifying and subsetting data:
+
+Subset data to include only mouse samples (not soil) and limit to the "core microbiome". 
+```{r}
+#Choose mouse samples only
+phy_mouse<-subset_samples(phy, Sample_type=="AS")
+#Drop taxa with no abundance after sample filtering
+phy_mouse<-filter_taxa(phy_mouse, function(x) max(x) > 0, TRUE) 
+
+#Define core microbiome based on relative abundance and prevalnece across samples
+phy_mouse_core_relative <- microbiome::core	(microbiome::transform(phy_mouse, "compositional"),detection=0.1/100, prevalence=1/100)
+
+#Subset data to contain only core microbes
+phy_mouse_core_counts <- prune_taxa(taxa_names(phy_mouse_core_relative), phy_mouse)
+```
+--> We have 613 taxa present among 397 mouse gut microbiome samples  (approx. 1.5 times more observations than dimensions).
+
+(NOTE: in original data we also have 1613 taxa present among 25 soil microbiome samples, but this may be too sparse data set for inferring co-occurrence even for speaceasi.)
+
+
+
+
+- Let's use an ordination plot to do a quick visualization of the general variation patterns present in this data set.
+```{r}
+
+sample_ord_jaccard <- ordinate(phy_mouse_core_counts, method= "PCoA", distance= 'jaccard')
+
+#Microbiome variation across time
+p1<-plot_ordination(phy_mouse_core_counts,sample_ord_jaccard,type= "samples", color= "month_numeric") +geom_point(size=2)+theme_bw()
+p1
+
+#microbiome varaition among study sites ("Grid")
+p2<-plot_ordination(phy_mouse_core_counts,sample_ord_jaccard,type= "samples", color= "Grid", shape="Grid") +geom_point(size=2)+theme_bw()+scale_color_manual(values=c("red","lightblue","purple","blue","orange"))
+p2
+
+
+```
+
+
+
+### 3. Make spiecEASI co-occurrence networks
+
+Spieceasi has a couple of user-defined options. Here we will use:
+
+method= mb 
+
+"meinshausen-buhlmann neighborhood selection", which is the faster of the two methods for calculationg the sparse inverse co-variance matrix.
+
+lambda.min.ratio= 0.01 
+
+Stringency of edges. This defines how dense of a network we expect to be exploring. Higher values enhance our inference for sparser networks. We can get away with a small number because our observations-to-dimensions ratio is pretty favorable (approx. 1.5 times more observations than dimensions) and thus the network is not expected to be extremely sparse.
+
+nlambda=20 
+
+How detailed our sampling of the lambda path should be in StARS. Higher values enhance exploration of denser networks.
+
+rep.num=20 
+
+How many bootstap subset networks to make to choose most stable penalty parameter in StARS
+```{r}
+PHY<-phy_mouse_core_counts
+
+#Make sure taxa are rows, as this is required by spieceasi
+all(rownames(otu_table(PHY))==taxa_names(PHY))
+otu_table(PHY)<-t(otu_table(PHY))# taxa are rows
+all(rownames(otu_table(PHY))==taxa_names(PHY))
+
+nc <- 2 # number of cores used for parallelization. Max 2 is good for a normal laptop.
+
+#This can take up to 10 minutes. To avoid the wait, you can also just load the resulting spieceasi-objects ready-made from the tutorial folder 
+
+#spieceasi_object <- spiec.easi(PHY, 
+#                              method='mb', 
+#                              lambda.min.ratio=0.01, 
+#                              nlambda=20, 
+#                              icov.select.params=list(rep.num=20, ncores=nc))
+
+#saveRDS(spieceasi_object, "spieceasi_object_mouse.rds")
+spieceasi_object_mouse<-readRDS("spieceasi_object_mouse.rds")
+
+```
+### 4. Examine and visualize spiecEASI network
+
+ 
+- Plotting ecological networks with igraph
+
+Here each node is a bacterial taxon and the edges between them describe co-occurrence links (either positive OR negative co-occurrence)
+
+First we use igrap to convert the adjacency matrix of the spiecEASI-object to an igraph object, because igraph is the best R package for plotting graphs (networks) and computing graph statistics
+```{r}
+
+library(igraph)
+
+#Make igraph adjacency matrix
+ig.SpiecNet <- adj2igraph(getRefit(spieceasi_object_mouse), vertex.attr=list(name=taxa_names(PHY)))
+
+plot_network(ig.SpiecNet, PHY, type='taxa', color="Phylum", label=NULL, point_size=1.5,line_weight=0.2,line_alpha=0.4)
+
+```
+
+
+--> Seems like there is some clustering according to phyla: Bacteroidota are more connected to other Bavteroidota nd Firmicutes to other Firmicutes. Note we do not know yet if these connections are positive or negative links.
+
+
+
+- Degree distribution:
+
+The distribution of degree values (number of connections per node) is a useful metric to compare network structures. If networks are organised randomly ("random graphs"), this often is reflected by a normally distributed degree values (few nodes with very few or very many connections) or right-skewed degree distribution (most nodes are connected to most other nodes). Conversely, a left-skewed degree distribution (most nodes have few connections while few nodes have many) is a common sign of non-random network, i.e. a network with a deliberate structure. Non-random network structure can be a sign of ecological forces shaping species interactions. Degree distributions are a good first check of whether our microbial taxa seem to co-occur in a manner that is random or non-random and thus potentially ecologically structured.
+
+```{r}
+#look at the degree statistics from the network: 
+
+dd.s <- degree_distribution(ig.SpiecNet, cumulative=FALSE)
+
+#Mean degree
+sum(seq_along(dd.s)*dd.s)-1
+
+#plot degree distributions
+plot(seq_along(dd.s)-1, dd.s, type='b',ylab="Frequency", xlab="Degree", col='red')
+
+```
+
+--> Looks between normal and left-skewed --> likely a non-random network
+Note that this is a network with both positive AND negative links of any weight.
+
+
+
+
+- Separating positive and negative links.
+
+Currently the links in the network are hard to interpret, as they can mean either positive (e.g. co-occurrence due dependance) or negative (e.g competitive exclusion) relationships between microbial taxa. Let's explore positive vs. negative co-occurrence in this network: 
+
+The inverse covariance matrix estimated by SpiecEASI is in itself hard to interpret as a measure of co-occurrence (as it shows inverse measures of covariance). However, as you might remember, the spiecEASI matrix was obtained via a form of regression. Thus we can use the regression coefficients from the SPIEC-EASI output to make a more easily interpretable co-occurrence matrix, where positive numbers depict positive relationships and negative numbers depict a negative relationship. Because we used method "mb" above to calculate the sparse inverse covariance matrix, we can extract the regression coefficients with command "getOptBet"a. The regression coefficient matrix is by default not symmetric (microbe A can co-occur with microbe B more often than microbe B co-ocurs with micribe A) but to stick with the simples possible co-occurrence network, we will make it symmetrical with command "symBeta". Thus in this resulting matrix, each pair of microbial taxa will have a number that describes how often they co-occur together in the same hosts, relative to how often they occur in general. 
+
+Fun fact: This is mathematically similar to what is called "simple ratio index" in social network analysis. We are measuring ecological co-occurrence roughly the same way as social relationships are commonly inferred from observational occurrence data, based on "who was in the same place with whom and how often".
+```{r}
+#Construct symmetrical co-occurrence matrix ("BetaMat") based on the SpiecEASI regression coefficients that describe the correlation between occurrences of each pair of microbial taxa. 
+
+regression_coefs<-getOptBeta(spieceasi_object_mouse)
+betaMat=as.matrix(symBeta(getOptBeta(spieceasi_object_mouse)))
+
+#Summarise the number of positive vs. negative links. (Need to divide by two as matrix is symmetrical)
+positive=length(betaMat[betaMat>0])/2
+positive #1851 positive links in the network
+negative=length(betaMat[betaMat<0])/2
+negative #265 negative links in the network
+total=length(betaMat[betaMat!=0])/2 
+total# 2116 non-zero links in the network
+
+#Summarise the strength of positive and negative links (known as "the edge weight")
+#Take all non-zero values from the matrix:
+edgeweights<-betaMat[betaMat!=0]
+
+#Distribution of edge weights:
+hist(edgeweights)# Just like the number of links, the edge weights are more on the positive side
+
+#Summeries of edge weights
+mean(edgeweights)
+max(edgeweights)
+min(edgeweights)
+
+```
+Pondering tasks:
+
+a) --> Can you interpret what the numbers of mean, max and min edge weights mean?
+
+b) --> Notice this ecological network has tenfold more positive co-occurrence links than negative exclusion links. What might this mean for the microbiome as a whole?
+
+
+
+# ...THINK.....
+
+
+
+
+
+Answers:
+
+a) 
+the average co-occurrence in this network is 0.04, which is pretty close to zero but on the positive side. We can say that this network has more positive co-occurrence than negative
+
+The maximum co-occurrence in this network is 0.74. The maximum frequency that any two microbial taxa occur together rather than without each other is 0.74. 
+
+The minimum co-occurrence in this network is -0.53. The maximum frequency any two taxa occur without each other rather than with, is 0.53
+
+b) Ecological networks with higher positive-to-negative links ratio (more dependance than competition between species) tend to be more unstable (Coyte et al., 2015), due to cascading effects of extinction --> In an ecological community enriched in positive (dependent) relationships, when one species disappears, all species dependent on it also disappear. Conversely, in an ecological community with many negative (competitive) links, the niche of a disappearing species is rapidly taken over by a competitor, securing the continuous existence of the niche and all other species dependent on it.
+
+
+
+
+
+- Plotting networks with positive vs. negative edges
+
+First, let's plot our co-occurrence network with only positive co-occurrence links. 
+```{r}
+#Make an new igraph adjacency matrix which has only positive edges. We do this by filtering the igraph adjacency matrix out of some edges based on their value in the BetaMat-matrix:
+
+#Make a list of edges to be filtered:
+otu.ids=colnames(spieceasi_object_mouse$est$data)
+edges=E(ig.SpiecNet)
+filtered.edges=c()
+
+for(e.index in 1:length(edges)){
+	adj.nodes=ends(ig.SpiecNet,edges[e.index])
+	xindex=which(otu.ids==adj.nodes[1])
+	yindex=which(otu.ids==adj.nodes[2])
+	beta=betaMat[xindex,yindex]
+	#This is wehre we define the criteria based on which edges are discarded:
+	if(beta<0){
+		filtered.edges=c(filtered.edges,edges[e.index])
+	}
+}
+
+#Filter based on the list of edges to be filtered
+ig.SpiecNet.positive=delete_edges(ig.SpiecNet, filtered.edges) 
+
+#Plot network with only positive edges_
+plot_network(ig.SpiecNet.positive, PHY, type='taxa', color="Phylum", label=NULL, point_size=1.5,line_weight=0.2,line_alpha=0.4)
+
+```
+
+
+This network seems to have a clearer structure than before. What does this mean?
+
+There seems to be two taxonomically separated clusters, dominated by microbial taxa in Firmicutes and Bacteroidota, which have more positive links among themselves than between. Are there more negative links between these clusters than within?
+
+Let's explore this by plotting both negative and positive links with different colours:
+```{r}
+#Make an new igraph adjacency matrix which has all edges but an added variable for their colour based on their sign in the BetaMat-matrix:
+
+#Make a list of edge colours:
+otu.ids=colnames(spieceasi_object_mouse$est$data)
+edges=E(ig.SpiecNet)
+edge.colors=c()
+
+for(e.index in 1:length(edges)){
+	adj.nodes=ends(ig.SpiecNet,edges[e.index])
+	xindex=which(otu.ids==adj.nodes[1])
+	yindex=which(otu.ids==adj.nodes[2])
+	beta=betaMat[xindex,yindex]
+	if(beta>0){
+	  #This is where we define the criteria based on which the edge is made red (positive) or blue (negative)
+		edge.colors=append(edge.colors,"red")
+	}else if(beta<0){
+		edge.colors=append(edge.colors,"blue")
+	}
+}
+
+#Give edges colors based on list
+E(ig.SpiecNet)$edge_color=edge.colors
+
+#Add taxonomic levels to the igraph object so we can use igraph plotting functions that are naive to phyloseq:
+
+nodenames=V(ig.SpiecNet)$name
+V(ig.SpiecNet)$name_p=getTaxonomy(nodenames, tax_table(PHY), level="phylum",useRownames=TRUE)
+
+#Make a little plotting-metadata table with useful information about each node in the network
+demo<-data.frame(ASV=nodenames,Phylum=V(ig.SpiecNet)$name_p)
+
+demo$Phylum<-as.factor(demo$Phylum)
+demo$Phylum_col<-demo$Phylum
+levels(demo$Phylum_col)
+
+#Here we will give microbial taxon colours based on their Phylum. We will mark Bacteroidota with black and Firmicutes with white. The other, more rare phyla will all be marked with grey for now, as we are not interested in them.
+levels(demo$Phylum_col)<-c("grey","black","grey","grey","grey","lightgrey","grey")
+
+#plot network with node colour depicting microbial taxonomy (Phylum) and edge colour depicting positive vs. negative links between them:
+
+plot(ig.SpiecNet,layout=layout.fruchterman.reingold(ig.SpiecNet),
+     vertex.label=NA, 
+     vertex.size=3, 
+     vertex.color = adjustcolor(demo$Phylum_col, alpha.f = .8),
+     vertex.frame.color="#00000000", 
+     edge.color=E(ig.SpiecNet)$edge_color,
+     edge.width= 0.95, 
+     edge.curved=0,
+     margin=-0.3)
+
+
+#Circle
+plot(ig.SpiecNet,layout=layout_in_circle(ig.SpiecNet),vertex.label=NA, vertex.size=3, vertex.color=V(ig.SpiecNet)$node_color, vertex.frame.color="#00000000", edge.color=E(ig.SpiecNet)$edge_color,edge.width= 0.6, edge.curved=0)
+```
+
+In some computers, margins of igraph networks can become very large, making the network plot too small to see the details. If you cannot see the details of the plot, you can save it with high resolution. There is a larger version of this same figure already saved in the tutorial folder.
+
+
+--> We can see from the first plot that indeed negative edges seem to connect the two clusters whereas positive edges are more common within the taxonomic clusters. This can be a sign that there are two main "Phylum-level "types" or stable equilibria of microbiome in this data, with one dominated by Bacteroidota and the other by Firmicutes and few to non intermediate forms. Second plot shows that negative links are driven by a small number of taxa having a large number of negative associations. 
+
+Indeed we know that these samples, which are collected from around a full year from Wood mice of the same population tend to fall into two categories separated by differential abundance of these two phyla, due to the host species shifting diet from insectivore to seed-eater between seasons (See Marsh et al.)
+
+
+### 5. Clustering microbiome based on co-occurrence.
+
+We can use the POSITIVE co-occurrence of microbial taxa as a way to simplify our microbiome data / reduce dimensionality of microbiome variation. We can do this by considering clusters of frequently co-occuring taxa as one unit of microbiome, rather than considering each taxa as units of microbiome. 
+```{r}
+#Make positive-edges-only matrix
+betaMatPos<-betaMat
+betaMatPos[which(betaMatPos<0)]<-0
+
+#examine distribution of positive co-occurrence values:
+betaMatPos_nonzero<-betaMatPos[lower.tri(betaMatPos)][betaMatPos[lower.tri(betaMatPos)]>0]
+hist(betaMatPos_nonzero)
+```
+
+
+
+We can eyeball this distribution to decide a threshold for co-occurrence (=edge weight) we will use to cluster microbial taxa together. In practice we will transform the co-occurrence network such that all edgs with a co-occurrence value below the chosen threshold will be dropped (transformed to zero). The resulting filtered co-occurrence network we will feed to a greedy clustering algorithm that looks for the optimal number of clusters in this network. 
+
+Let's choose >0 as our threshold for now
+
+- Make a new igraph net which has only values above the chosen threshold:
+```{r}
+#Make a list of edges to be filtered:
+otu.ids=colnames(spieceasi_object_mouse$est$data)
+edges=E(ig.SpiecNet)
+filtered.edges=c()
+
+for(e.index in 1:length(edges)){
+	adj.nodes=ends(ig.SpiecNet,edges[e.index])
+	xindex=which(otu.ids==adj.nodes[1])
+	yindex=which(otu.ids==adj.nodes[2])
+	beta=betaMat[xindex,yindex]
+	#This is wehre we define the criteria based on which edges are discarded:
+	if(beta<0){
+		filtered.edges=c(filtered.edges,edges[e.index])
+	}
+}
+#Filter based on the list of edges to be filtered
+ig.SpiecNet.sub=delete_edges(ig.SpiecNet, filtered.edges) 
+
+```
+- Clustering with  fast greedy modularity optimization algorithm 
+(Clauset et al., 2004) 
+```{r}
+clusters=cluster_fast_greedy(ig.SpiecNet.sub)
+
+#How many clusters we have:
+length(clusters) # our 613 taxa are now compressed to 31 clusters, based on >0 co-ocurrence
+
+ClusterMembership<-data.frame("ASV"=clusters$names, "membership"=paste0("cluster",clusters$membership))
+
+
+#Now we can compress the microbiome data to consider these clusters as equivalents of taxa, by feeding them as fake taxonomic levels into the phyloseq taxonomy table
+
+phy_compress<-PHY
+
+all(taxa_names(phy_compress)==ClusterMembership$ASV) #taxa are in same order, so safe to add cluster membership as fake "taxonomic levels", here using Kingdom
+
+#Let's use the first taxonomic level, the "Kingdom" to compress
+tax_table(phy_compress)[,1]<-ClusterMembership$membership
+
+phy_compress<-tax_glom(phy_compress,taxrank="Kingdom")
+
+#Double check the "taxa" in phyloseq objects are now the same number as clusters
+length(taxa_names(phy_compress))==length(clusters)
+
+```
+
+- Greedy clustering is a quick way of simplifying microbiome data.
+However, here we quite arbitrarily chose the threshold for co-occurrence to be very loose, >0. With only 31 unique microbial units in the data, will we be able to reliably model microbiome differences between hosts or are reducing the variation so much that some important differences become un-detectable?
+
+Let's compare the variation patterns visualized in the beginning of this tutorial to those derived from this simplified data:
+```{r}
+
+#Ordination on the full data:
+p1<-p1+ggtitle("Ordination of full data")
+
+#Ordination on simplified data
+sample_ord_jaccard2 <- ordinate(phy_compress, method= "PCoA", distance= 'jaccard')
+
+p3<-plot_ordination(phy_compress,sample_ord_jaccard2,type= "samples", color= "month_numeric") +geom_point(size=2)+theme_bw()+ggtitle("Ordination of simplified data")
+
+p4<-plot_ordination(phy_compress,sample_ord_jaccard2,type= "samples", color= "Grid", shape="Grid") +geom_point(size=2)+theme_bw()+scale_color_manual(values=c("red","lightblue","purple","blue","orange"))
+
+library(patchwork)
+
+plot<-(p1+p3)/(p2+p4)+plot_layout(guides="collect")
+plot
+
+```
+
+
+--> Indeed, when simplifying data this heavily, we are losing detectability of biological signals (here microbiome differences between study sites and across time)
+
+#### So: How many clusters we should have/ how frequently taxa should co-occur to make a coherent cluster? This is a good question. 
+
+On one hand, the more loose criteria (lower co-occurrence ) we consider as the threshold, the fewer clusters we get and the simpler our microbiome data will be to work with. On the other hand, by lumping together taxa that often occur also in absence of each other, we eat out the variation in the data, which we might be interested in modeling. 
+
+
+- Here we will do a quick test code that maps different clustering parameters (co-occurrence threshold and the resulting number of clusters) against our ability to detect whole-microbiome-level differences among hosts (measured through microbiome betadivertsity). We can use this comparison map to decide the stringency of our simplification strategy. 
+
+This should take up to 10 minutes to run.
+```{r}
+
+ThresholdsInfo<-data.frame("Co-occurrence_threshold"=NA, "Number_of_clusters"=NA, "mean_jaccard_dissimilarity"=NA, "jaccard_dissimilarity_variability"=NA,"mean_bray_dissimilarity"=NA, "bray_dissimilarity_variability"=NA)
+
+thresholds<-seq(from=0, to=1, length.out=101)
+thresholds<-thresholds[which(thresholds<max(betaMatPos_nonzero))]
+
+for(i in 1:length(thresholds)){
+  threshold.i<-thresholds[i]
+  
+#Make igraph net which has only chosen edges
+otu.ids=colnames(spieceasi_object_mouse$est$data)
+edges=E(ig.SpiecNet)
+filtered.edges=c()
+for(e.index in 1:length(edges)){
+	adj.nodes=ends(ig.SpiecNet,edges[e.index])
+	xindex=which(otu.ids==adj.nodes[1])
+	yindex=which(otu.ids==adj.nodes[2])
+	beta=betaMat[xindex,yindex]
+	if(beta<threshold.i){
+		filtered.edges=c(filtered.edges,edges[e.index])
+	}
+}
+ig.SpiecNet.i=delete_edges(ig.SpiecNet, filtered.edges) 
+
+#clustering with fast greedy modularity optimization algorithm: 
+
+clusters.i=cluster_fast_greedy(ig.SpiecNet.i)
+
+ClusterMembership<-data.frame("ASV"=clusters.i$names, "membership"=paste0("cluster",clusters.i$membership))
+
+PHY_compress.i<-PHY
+all(taxa_names(PHY_compress.i)==ClusterMembership$ASV) #in same order, so safe to add cluster membership as fake "taxonomic levels", here using Kingdom
+
+tax_table(PHY_compress.i)[,1]<-ClusterMembership$membership
+PHY_compress.i<-tax_glom(PHY_compress.i,taxrank="Kingdom")
+
+#Then we can calculate a Jaccard matrix to describe overall variation among microbiomes of individual hosts
+
+JACM<- as.matrix(phyloseq::distance(PHY_compress.i, method = "jaccard", type = "samples"))
+BRAYM<- as.matrix(phyloseq::distance(PHY_compress.i, method = "bray", type = "samples"))
+
+#Now we use the mean similarity and the variation in similarity (standard deviation) as a measure of detectability of individual differences in overall microbiome composition
+
+mean_jaccard_dissimilarity.i= mean(JACM)
+jaccard_dissimilarity_variability.i<-sd(JACM)
+
+mean_bray_dissimilarity.i= mean(BRAYM)
+bray_dissimilarity_variability.i<-sd(BRAYM)
+
+ThresholdsInfo.i<-data.frame("Co-occurrence_threshold"=threshold.i, "Number_of_clusters"=length(clusters.i), "mean_jaccard_dissimilarity"=mean_jaccard_dissimilarity.i, "jaccard_dissimilarity_variability"=jaccard_dissimilarity_variability.i,"mean_bray_dissimilarity"=mean_bray_dissimilarity.i, "bray_dissimilarity_variability"=bray_dissimilarity_variability.i)
+
+ThresholdsInfo<-rbind(ThresholdsInfo,ThresholdsInfo.i)
+print(paste("analysing threshold number ",i,"/",length(thresholds)))
+}
+
+#Plots of relationships between co-occurrence thresholds, cluster number and variation retained
+
+p5<-ggplot(ThresholdsInfo)+ geom_point( aes(x=Number_of_clusters, y=mean_bray_dissimilarity), color="red")+theme_bw()
+p6<-ggplot(ThresholdsInfo)+ geom_point( aes(x=Number_of_clusters, y=Co.occurrence_threshold), color="blue")+theme_bw()
+
+p5+p6
+```
+
+--> Seems like samples appear more similar when clustered heavily to a small  number of clusters (with a low co-occurrence threshold). The more similar the samples appear, the more difficult it obviously is for us to detect their differences. We stop gaining linearly more detectability over dissimilarity at around 400 clusters, which roughly corresponds to co-occurrence threshold 0.1. So based on this exploration, co-occurrence threshold of 0.1 might be a good compromise here between retaining variation and simplifying data. 
+
+In real life, how much simpler the data needs to be depends on the computational methods we plan to use. Similarly, how much detectability over variation we need depend on how striking are the differences we ae trying to model. 
+
+
+### References:
+
+Callahan BJ, McMurdie PJ, Rosen MJ, Han AW, Johnson AJA,
+Holmes SP. DADA2: High-resolution sample inference from
+Illumina amplicon data. Nat Methods. 2016a;13:581–3.
+
+Callahan BJ, Sankaran K, Fukuyama JA et al. Bioconductor Workflow for Microbiome Data Analysis: from raw reads to community analyses [version 2; peer review: 3 approved]. F1000Research 2016b, 5:1492 (https://doi.org/10.12688/f1000research.8986.2) 
+
+Clauset, A., Newman, M. E., & Moore, C. (2004). Finding community structure in very large networks. Physical review E, 70(6), 066111.
+
+Coyte, K. Z., Schluter, J., & Foster, K. R. (2015). The ecology of the microbiome: Networks, competition, and stability. Science, 350(6261), 663–666. https://doi.org/10.1126/science.aad2602
+
+Davis, N. M., Proctor, D. M., Holmes, S. P., Relman, D. A., & Callahan, B. J. (2018). Simple statistical identification and removal of contaminant sequences in marker-gene and metagenomics data. Microbiome, 6(1), 1-14.
+
+Kurtz, Z. D., Müller, C. L., Miraldi, E. R., Littman, D. R., Blaser, M. J., & Bonneau, R. A. (2015). Sparse and compositionally robust inference of microbial ecological networks. PLoS computational biology, 11(5), e1004226.
+```{r}
