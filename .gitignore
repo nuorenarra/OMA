@@ -1,3 +1,10 @@
+demo_output/
+old/
+data.zip
+libs/
+session.rda
+tmp.*
+*nb.html
 *.html
 docs/
 *~
@@ -9,8 +16,18 @@ _book
 _bookdown_files
 docs
 *.rds
+*.Rproj
 *.md
 *_cache/
 *_files/
 DAA example
 visualization_techniques.nb.html
+.DS_Store
+renv/
+renv.lock
+.Rprofile
+
+# Cachix stuff
+cachix/.envrc
+cachix/.devenv
+cachix/.direnv

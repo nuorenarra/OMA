@@ -1,53 +1,118 @@
 Package: OMA
-Title: Orchestrating Microbiome Analysis
-Version: 0.98.9
-Date: 2021-09-10
-Authors@R: 
+Title: Orchestrating Microbiome Analysis with Bioconductor
+Version: 0.98.27
+Date: 2024-10-01
+Authors@R:
     c(person("Leo", "Lahti", role = c("aut"),
              comment = c(ORCID = "0000-0001-5537-637X")),
-      person("Sudarshan", "Shetty", email = "sudarshanshetty9@gmail.com",
-             role = c("aut"),
-             comment = c(ORCID = "0000-0001-7280-9915")),
+      person(given = "Tuomas", family = "Borman", role = c("aut", "cre"),
+             email = "tuomas.v.borman@utu.fi",
+             comment = c(ORCID = "0000-0002-8563-8884")),
       person("Felix GM", "Ernst", email = "felix.gm.ernst@outlook.com",
-             role = c("aut", "cre"),
-             comment = c(ORCID = "0000-0001-5064-0928"))
-	     )
+             role = c("aut"),
+             comment = c(ORCID = "0000-0001-5064-0928")),
+      person("and others", "(see the full list of contributors)",
+             role = c("ctb"))
+         )
 Description:
-    This is a reference cookbook for performing **Microbiome Analysis** with 
-    Bioconductor in R.
-License: CC BY-NC-SA 3.0 US
+    This is a reference cookbook for **Microbiome Data Science** with
+    R and Bioconductor.
+License: CC BY-NC-SA 4.0
 Encoding: UTF-8
 URL: https://github.com/microbiome/OMA
 BugReports: https://github.com/microbiome/OMA/issues
 LazyData: true
 biocViews:
     Book
+Depends:
+    R (>= 4.0.0)
+Imports:
 Suggests:
     ALDEx2,
     ANCOMBC,
-    bookdown,
+    ape,
+    biclust,
+    BiocBook,
+    BiocManager,
+    BiocParallel,
+    Biostrings,
+    bluster,
+    caret,
+    circlize,
+    cluster,
+    cobiclust,
+    ComplexHeatmap,
+    corpcor,
+    curatedMetagenomicData,
+    dada2,
+    dendextend,
+    devtools,
+    DirichletMultinomial,
+    dplyr,
+    DT,
+    factoextra,
+    forcats,
+    fido,
+    ggplot2,
     ggpubr,
-    kableExtra,
+    ggtree,
+    glmnet,
+    glue,
+    grid,
+    gtools,
+    gsEasy,
+    igraph,
+    IntegratedLearner,
     knitr,
     Maaslin2,
     mia,
+    miaTime,
     miaViz,
+    microbiome,
     microbiomeDataSets,
+    MicrobiomeStat,
+    mikropml,
+    MMUPHin,
+    MOFA2,
+    multiview,
+    NetCoMi,
+    NbClust,
+    NMF,
     patchwork,
-    picante,
+    phyloseq,
+    plotly,
+    purrr,
+    qgraph,
+    RColorBrewer,
     rebook,
-    rmarkdown,
-    Rtsne,
+    reshape2,
+    reticulate,
+    rgl,
+    ROCR,
+    scales,
     scater,
-    scuttle,
-    scran,
+    sechm,
+    sessioninfo,
+    shadowtext,
+    SpiecEasi,
+    SPRING,
+    stats,
+    stringr,
     tidyverse,
-    tidySummarizedExperiment,
-    TreeSummarizedExperiment,
-    uwot,
-    phyloseq
+    topGO,
+    vegan,
+    WGCNA,
+    xgboost
 Remotes:
     github::microbiome/mia,
-    github::microbiome/miaViz
+    github::microbiome/miaViz,
+    github::microbiome/miaTime,
+    github::stefpeschel/NetCoMi,
+    github::zdk123/SpiecEasi,
+    github::GraceYoon/SPRING,
+    github::himelmallick/IntegratedLearner
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.1
+BiocType: Book
+BiocBookTemplate: 1.0.5
+SystemRequirements: quarto

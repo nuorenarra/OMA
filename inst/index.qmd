@@ -1,0 +1,127 @@
+---
+title-block-banner: true
+---
+
+# Overview  {-}
+
+```{r "intro"}
+#| echo: false
+intro <- tryCatch(
+    {
+        library(htmltools)
+        description <- packageDescription("OMA")
+        pkg <- description$Package
+        version <- description$Version
+        authors <- eval(parse(text = description$Authors))
+        license <- description$License
+        glue::glue(
+            "**Package:** {pkg}<br/>\n", 
+            "**Authors:<br/>** {
+                authors |> 
+                    format(include = c('given', 'family', 'role')) |> 
+                    paste('- ', x = _) |> 
+                    paste(collapse = '<br/> ')
+            }<br/>\n", 
+            "**Compiled:** {as.character(Sys.Date())}<br/>\n", 
+            "**Package version:** {version}<br/>\n", 
+            "**R version:** {R.version.string}<br/>\n", 
+            "**BioC version:** {BiocManager::version()}<br/>\n", 
+            "**License:** {license}<br/>"
+        )
+    }, 
+    error = function(e) {"Local preview"}
+)
+```
+
+
+::: {layout-ncol=2}
+`r intro`
+
+<img src="assets/cover.png" align="middle" 
+  style="max-width:100%;
+	  border-style: solid;
+	  border-color: #037da1;
+	  border-radius: 5%;" />
+
+:::
+
+# Welcome {-}
+
+::: {.callout-warning icon='true'}
+
+## Important!
+
+This is a development version of the [**Orchestrating Microbiome Analysis
+with Bioconductor**](https://microbiome.github.io/OMA/) [@OMA] book from the
+the [*miaverse*](https://microbiome.github.io). 
+
+:::
+
+You are reading the online book, [**Orchestrating Microbiome Analysis
+with Bioconductor**](https://microbiome.github.io/OMA/) [@OMA], where we
+walk through common strategies and workflows in microbiome data
+science.
+
+The book shows through concrete examples how you can take advantage of
+the latest developments in R/Bioconductor for the manipulation,
+analysis, and reproducible reporting of hierarchical and heterogeneous
+microbiome profiling data sets. The book was borne out of necessity,
+while updating microbiome analysis tools to work with Bioconductor
+classes that provide support for multi-modal data collections. Many of
+these techniques are generic and widely applicable in other contexts
+as well.
+
+This work has been heavily influenced by other similar resources, in
+particular the Orchestrating Single-Cell Analysis with Bioconductor
+[@Amezquita2020], [phyloseq
+tutorials](http://joey711.github.io/phyloseq/tutorials-index)
+[@Callahan2016] and [microbiome
+tutorials](https://microbiome.github.io/tutorials/) [@Shetty2019].
+This book extends these resources to teach the grammar of Bioconductor
+workflows in the context of microbiome data science.  As such, it
+supports the adoption of general skills in the analysis of large,
+hierarchical, and multi-modal data collections. We focus on microbiome
+analysis tools, including entirely new, partially updated as well as
+previously established methods.
+
+This online resource and its associated ecosystem of microbiome data
+science tools are a result of a community-driven development process,
+and welcoming new contributors. Several individuals have
+[contributed](https://github.com/microbiome/OMA/graphs/contributors)
+methods, workflows and improvements as acknowledged in the
+Introduction. You can find more information on how to find us online
+and join the developer community through the project homepage at
+[microbiome.github.io](https://microbiome.github.io). This online
+resource has been written in Quarto with the BiocBook package [@serizay2023].
+The material is **free to use** with the [Creative Commons
+Attribution-NonCommercial 3.0](https://creativecommons.org/licenses/by-nc/3.0/us/)
+License.
+
+We assume that the reader is already familiar with R programming. For
+references and tips on introductory material for R and Bioconductor,
+see [@sec-resources]. In this book, we start by introducing the
+material and link to further resources for learning R and
+Bioconductor. We describe the key data infrastructure, the
+`TreeSummarizedExperiment` class that provides a container for
+microbiome data, and how to get started by loading microbiome data set
+in the context of this new framework. After becoming familiar with data
+containers and data importing, the book covers the common steps in
+microbiome data analysis,
+beginning with the most common steps and progressing to more
+specialized methods in subsequent sections. *Workflows*,
+provides case studies for the various datasets used throughout the
+book. For hands-on practice, the *Training* section provides comprehensive
+training resources. Finally, *Appendix*, links to further resources and
+acknowledgments.
+
+## Building OMA book {#sec-building-oma}
+
+This book is automatically built to ensure that all code examples are functional.
+See [@sec-session-info] for details.
+
+In addition to accessing this book online, you can copy and paste the executable
+code examples to run on your local computer. For package installation
+instructions, refer to [@sec-packages]. You can also build and view the entire
+book locally by following the steps provided
+[here](https://github.com/microbiome/OMA?tab=readme-ov-file#deployment), or
+use Docker image [@sec-docker-image].

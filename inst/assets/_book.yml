@@ -1,0 +1,89 @@
+language: 
+  search-box-placeholder: Search
+book:
+  title: "Orchestrating Microbiome Analysis"
+  search: 
+    location: sidebar
+    type: textbox
+  navbar:
+    logo: "assets/mia_logo.png"
+    background: transparent
+    align: center
+    left:
+      - icon: github
+        menu:
+          - text: Source Code
+            url:  https://github.com/microbiome/OMA/
+          - text: Browse version `devel`
+            url:  https://microbiome.github.io/OMA/docs/devel/
+      - icon: twitter
+        href: https://twitter.com
+    title: "Orchestrating Microbiome Analysis"
+  chapters:
+    - index.qmd
+    - part: "Introduction"
+      chapters:
+        - pages/intro.qmd
+        - pages/miaverse.qmd
+    - part: "Data containers & Importing"
+      chapters:
+        - pages/containers.qmd
+        - pages/import.qmd
+        - pages/convert.qmd
+    - part: "Data Manipulation"
+      chapters:
+        - pages/wrangling.qmd
+        - pages/transformation.qmd
+        - pages/taxonomy.qmd
+        - pages/agglomeration.qmd
+    - part: "Exploration & QC"
+      chapters:
+        - pages/quality_control.qmd
+        - pages/composition.qmd
+    - part: "Diversity & Similarity"
+      chapters:
+        - pages/alpha_diversity.qmd
+        - pages/beta_diversity.qmd
+        - pages/clustering.qmd
+    - part: "Association"
+      chapters:
+        - pages/differential_abundance.qmd
+        - pages/correlation.qmd
+        - pages/msea.qmd
+        - pages/mmuphin_meta_analysis.qmd
+    - part: "Networks"
+      chapters:
+        - pages/network_learning.qmd
+        - pages/network_comparison.qmd
+    - part: "Multiomics"
+      chapters:
+        - pages/cross_correlation.qmd
+        - pages/multiassay_ordination.qmd
+        - pages/integrated_learner.qmd
+    - part: "Machine Learning & Statistical Modeling"
+      chapters:
+        - pages/machine_learning.qmd
+        - pages/statistical_modeling.qmd
+    - part: "Workflows"
+      chapters:
+        - pages/introductory_workflow.qmd
+        - pages/introductory_workflow_french_version.qmd
+        - pages/introductory_workflow_dutch_version.qmd
+    - part: "Training"
+      chapters:
+        - pages/training.qmd
+        - pages/exercises.qmd
+    - part: "Support & Resources"
+      chapters:
+        - pages/support.qmd
+        - pages/resources.qmd
+        - pages/acknowledgments.qmd
+  appendices:
+    - pages/extra_material.qmd
+    - pages/visualization.qmd
+    - pages/session_info.qmd
+  favicon: assets/favicon.png
+  sidebar: 
+    style: "docked"
+    background: "light"
+    collapse-level: 1
