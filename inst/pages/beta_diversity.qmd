@@ -1,4 +1,4 @@
-# Community Similarity {#sec-community-similarity}
+# Community similarity {#sec-community-similarity}
 
 ```{r setup, echo = FALSE, results = "asis"}
 library(rebook)
@@ -805,7 +805,6 @@ methods store the reducedDim object into the specified TreeSE.
 * t-distributed Stochastic Neighbor Embedding (t-SNE): `calculateTSNE()`
 and `runTSNE()`
 * UMAP: `calculateUMAP()` and `runUMAP()`
-
 
 For more information on sample clustering, you can refer to:
 
