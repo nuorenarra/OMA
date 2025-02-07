@@ -12,7 +12,7 @@ tse <- GlobalPatterns
 ```
 
 Taxonomic information is a key part of analyzing microbiome data, and without
-it, any type of data analysis probably will not make much sense. However,
+it, any type of microbiome data analysis will make little sense. However,
 the degree of detail of taxonomic information differs depending on the dataset
 and annotation data used.
 
@@ -33,22 +33,22 @@ clusters of taxa that co-vary across samples.
 ## Assigning taxonomic information
 
 There are a number of methods to assign taxonomic information. We like to give
-a short introduction about the methods available without ranking one over the
-other. This has to be your choice based on the result for the individual
-dataset.
+a short introduction on the methods available without ranking one over the
+other. This has to be your choice based on your individual dataset.
 
 ### DADA2
 
 The `dada2` package [@Callahan2016dada2] implements the `assignTaxonomy()`
-function, which takes as input the ASV sequences associated with each
-row of data and a training dataset. For more information visit the
+function, which takes as an input the ASV sequences associated with each
+row of data and a training dataset based on a taxonomic reference database 
+(such as Silva or Green Genes). For more information visit the
 [dada2 homepage](https://benjjneb.github.io/dada2/assign.html).
 
 ### DECIPHER
 
 The `DECIPHER` package [@R_DECIPHER] implements the `IDTAXA` algorithm to assign
-either taxonomic information or function information. For `mia`,
-only the first option is of interest for now and more information can be
+either taxonomic or functional information on the sequence variants. For `mia`,
+we are using only the first, taxonomic, option for now. More information can be
 found on the [DECIPHER website](http://www2.decipher.codes/Classification.html).
 
 ## Functions to access taxonomic information
@@ -68,14 +68,14 @@ columns that `mia` assumes to contain the taxonomic information.
 taxonomyRanks(tse)
 ```
 
-This can then be used to subset the `rowData` to columns needed.
+This can then be used to subset the `rowData` to focus only on the taxonomy-related columns.
 
 ```{r}
 rowData(tse)[, taxonomyRanks(tse)]
 ```
 
 `taxonomyRankEmpty()` checks for empty values in the given `rank` and returns a 
-logical vector of `length(x)`.
+logical vector of `length(x)`  (where `length(x)==ncol/rowData(tse)[, taxonomyRanks(tse)]`).
 
 ```{r}
 all(!taxonomyRankEmpty(tse, rank = "Kingdom"))
@@ -97,11 +97,10 @@ string with the following scheme `level:value`. If all levels are the same,
 this part is omitted, but can be added by setting `with.rank = TRUE`.
 
 ```{r}
-phylum <- !is.na(rowData(tse)$Phylum) &
-    vapply(data.frame(apply(
-       rowData(tse)[, taxonomyRanks(tse)[3:7]], 1L, is.na)), all, logical(1))
-getTaxonomyLabels(tse[phylum,]) |> head()
-getTaxonomyLabels(tse[phylum,], with.rank = TRUE) |> head()
+# Select those features that have Species level info
+rank_found <- !taxonomyRankEmpty(tse, rank = "Species")
+getTaxonomyLabels(tse[rank_found,]) |> head()
+getTaxonomyLabels(tse[rank_found,], with.rank = TRUE) |> head()
 ```
 
 By default the return value of `getTaxonomyLabels()` contains only
@@ -109,7 +108,7 @@ unique elements by passing it through `make.unique`. This step can be
 omitted by setting `make.unique = FALSE`.
 
 ```{r}
-getTaxonomyLabels(tse[phylum,], with.rank = TRUE, make.unique = FALSE) |> head()
+getTaxonomyLabels(tse[rank_found,], with.rank = TRUE, make.unique = FALSE) |> head()
 ```
 
 To apply the loop resolving function `resolveLoop()` from the
@@ -135,12 +134,12 @@ mapTaxonomy(tse, taxa = "Escherichia")
 
 ## Prune taxonomy tree {#sec-update-tree}
 
-Subsetting is explained in detail in [@sec-treese_subsetting]. However, if
-you've already subsetted your data, you may have noticed that the taxonomy tree
-does not automatically update when using the `[]` operators. Although the
-linakges between rows and tree nodes remain correct, the tree retains its
-original, complex structure. You may be wondering how to update the tree to
-reflect the newly simplified data.
+Subsetting data based on excluding certain taxa or samples is explained in detail 
+in [@sec-treese_subsetting]. However, if you've already subsetted your data, you 
+may have noticed that the taxonomy tree does not automatically update when using 
+the `[]` subsetting operators. Although the linkages between rows and tree nodes 
+remain correct, the tree retains its original, complex structure. You may be 
+wondering how to update the tree to reflect the newly simplified data.
 
 `mia` package functions `subsetBy*` and `agglomerateBy*` (see
 [@sec-agglomeration]) include an `update.tree` parameter to handle this
@@ -156,8 +155,8 @@ tse_sub <- tse[1:5, ]
 tse_sub
 ```
 
-ven though we have only 5 rows, the tree still retains its original number of
-tips. To align the tree with the subsetted data, we can use the
+We see that even though we have only 5 rows, the tree still retains its original number of
+tips. To update the tree by aligning it with the subsetted data, we can use the
 `TreeSummarizedExperiment::subsetByLeaf()` function, which allows us to select
 specific tips from the tree, effectively pruning it to match the current subset
 of data.
