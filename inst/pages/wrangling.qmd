@@ -18,9 +18,9 @@ You can split the data based on variables by using the functions
 [@sec-agglomeration].
 
 If you want to split the data based on a variable other than taxonomic rank, use 
-`splitOn()`. It works for row-wise and column-wise splitting. We might want to 
-split the data, Splitting the data may be useful, for example, if you want to 
-analyze data from different cohorts separately.
+`splitOn()`. It works for row-wise and column-wise splitting, that is for taking 
+a subset of features/taxa (rows) or samples (columns). Splitting the data may be useful, 
+for example, if you want to analyze different sample types separately:
 
 ```{r}
 #| label: splitOn
@@ -32,17 +32,16 @@ tse <- GlobalPatterns
 splitOn(tse, "SampleType")
 ```
 
-## Add or modify variables {#sec-add-or-modify-data}
+## Add or modify sample variables {#sec-add-or-modify-data}
 
-The information contained by the `colData` of a `TreeSE` can be added and/or 
-modified by accessing the desired variables. You might want to add or modify 
-this data to include new variables or update existing ones, which can be essential 
-for ensuring that all relevant metadata is available for subsequent analyses.
+The information about samples contained by the `colData` of a `TreeSE` can be added and/or 
+modified. You might want to add or modify this data to include new sample variables 
+or update existing ones, to ensure all relevant metadata is available for subsequent analyses.
 
 ```{r}
 #| label: modify_coldata
 
-# modify the Description entries
+# modify the entries of sample variable "Description"
 colData(tse)$Description <- paste(
     colData(tse)$Description, "modified description")
 
@@ -50,35 +49,38 @@ colData(tse)$Description <- paste(
 tse$Description |> head()
 ```
 
-New information can be added to the experiment by creating a new variable.
+New information can be added to the data by creating a new variable.
 
 ```{r}
 #| label: add-coldata
 
-# simulate new data
-new_data <- runif(ncol(tse))
+# simulate values for a new variable
+new_variable <- runif(ncol(tse))
 
 # store new data as new variable in colData
-colData(tse)$NewVariable <- new_data
+colData(tse)$NewVariable <- new_variable
 
 # view new variable
 tse$NewVariable |> head()
 ```
 
-Alternatively, you can add whole table by merging it with existing `colData`.
+Alternatively, you can add a whole table of sample information 
+into the `TreeSE` object by merging it with existing `colData`.
 
 ```{r}
 #| label: add-coldata2
 
-# simulate new data
+# simulate a table of new data with multiple columns
 new_data <- data.frame(var1 = runif(ncol(tse)), var2 = runif(ncol(tse)))
+#name the ros of the table according to the sample names of your data (colnames)
 rownames(new_data) <- colnames(tse)
 
 # Combine existing data with new data
 colData(tse) <- cbind(colData(tse), new_data)
 ```
 
-Similar steps can also be applied to `rowData`. If you have an assay whose
+Similar steps can also be applied to `rowData`, i.e., you can add and modify the variables 
+describing your features/taxa. If you have an assay whose
 rows and columns aling with the existing ones, you can add the assay easily
 to the `TreeSE` object.
 
@@ -100,7 +102,7 @@ assayNames(tse)
 
 Now we can see that the `TreeSE` object has now an additional assay called
 "random". When adding new samples or
-features to your existing dataset, you can use `cbind()` to combine columns for
+features to your existing dataset, you can use `cbind()` to add columns for
 new features or `rbind()` to add rows for new samples.
 
 ```{r}
@@ -118,8 +120,8 @@ a merging approach is the appropriate method.
 ## Merge data
 
 `mia` package has `mergeSEs()` function that merges multiple
-`SummarizedExperiment` objects. For example, it is possible to combine
-multiple `TreeSE` objects which each includes one sample.
+`SummarizedExperiment` objects. As an example, we will be merging
+multiple `TreeSE` objects each including one sample.
 
 `mergeSEs()` works much like standard joining operations. It combines rows and 
 columns and allows you to specify the merging method.
@@ -127,18 +129,19 @@ columns and allows you to specify the merging method.
 ```{r}
 #| label: merge1
 
-# Take subsets for demonstration purposes
+# Derive data subsets with one sample each for demonstration purposes
 tse1 <- tse[, 1]
 tse2 <- tse[, 2]
 tse3 <- tse[, 3]
+# Data subset with first 100 features and one sample:
 tse4 <- tse[1:100, 4]
 ```
 
 ```{r}
 #| label: merge2
 
-# With inner join, we want to include all shared rows. When using mergeSEs
-# function all samples are always preserved.
+# We use join = "inner" to include all shared rows into the merged object. 
+# Note when using mergeSEs function all samples are always preserved.
 tse <- mergeSEs(list(tse1, tse2, tse3, tse4), join = "inner")
 tse
 ```
@@ -146,7 +149,8 @@ tse
 ```{r}
 #| label: merge3
 
-# Left join preserves all rows of the 1st object
+# join = "left" preserves all rows of the 1st object
+# missing.values = 0 ensures that all missing values in the assay are replaced with a 0
 tse <- mergeSEs(tse1, tse4, missing.values = 0, join = "left")
 tse
 ```
@@ -155,7 +159,7 @@ tse
 
 For several custom analysis and visualization packages, such as those from
 `tidyverse`, the `SE` data can be converted to a long `data.frame` format with 
-`meltSE()`.    
+`meltSE()`. a long `data.frame` has one row per each combination of feature and sample.
 
 ```{r}
 #| label: melt-data
@@ -173,7 +177,7 @@ molten_tse <- meltSE(
 molten_tse |> head() |> kable()
 ```
 
-For `MultiAssayExperiment` data, you can utilize instead `longFormat()`.
+For `MultiAssayExperiment` data, you can use `longFormat()` instead of `meltSE()`.
 
 ```{r}
 #| label: melt-mae-data
