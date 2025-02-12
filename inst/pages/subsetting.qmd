@@ -9,16 +9,15 @@ In this chapter, we explore the concept of subsetting. Subsetting or
 filtering is the process of selecting specific rows or columns from a
 dataset based on certain criteria. When you subset your data, you retain the
 original values of the selected data points. For example, if you have a
-dataset of microbial taxa and you choose to keep only certain species, you
-still have the individual counts for those species. This allows you to analyze
-the data in detail, but you may lose information about other species that are
-not included.
+dataset of microbial taxa and you choose to include only certain species, you
+retain the individual counts for those species, while losing the information 
+on other species that are not included.
 
 Subsetting data helps to draw the focus of an analysis on particular
-sets of samples and / or features. When dealing with large datasets,
-the subset of interest can be extracted and investigated
-separately. This might improve performance and reduce the
-computational load.
+sets of samples and / or features. This can be useful in data cleaning 
+(e.g., getting rid of non-target features or duplicate samples) or in 
+dealing with large datasets, where analysing smaller subsets of data separately 
+may improve performance and reduce the computational load.
 
 Let us store `GlobalPatterns` into `tse` and check its original number of
 features (rows) and samples (columns).
@@ -46,7 +45,7 @@ subsetting by feature, expect the number of rows to decrease.
 
 ## Subset by sample (column-wise)
 
-Several criteria can be used to subset by sample:
+In this particular example data several criteria can be used to subset by sample:
 
 - origin
 - sampling time
@@ -55,8 +54,8 @@ Several criteria can be used to subset by sample:
 - cohort
 
 For the sake of demonstration, here we will extract a subset containing only the
-samples of human origin (feces, skin or tongue), stored as `SampleType` within
-`colData(tse)` as well as in `tse`.
+samples of human origin (feces, skin or tongue). This information is stored in `SampleType` 
+column within `colData(tse)` as well as in `tse`.
 
 First, we would like to see all the possible values that `SampleType` can have
 and how frequent those are:
@@ -68,10 +67,10 @@ and how frequent those are:
 tse$SampleType |> table() |> kable()
 ```
 
-Next, we _logical index_ across the columns of `tse` (make sure to
-leave the first index empty to select all rows) and filter for the
+Next, we make a _logical index_ across the columns of `tse` (make sure to
+leave the first index empty to include all rows) and filter for the
 samples of human origin. For this, we use the information on the
-samples from the meta data `colData(tse)`.
+samples from the sample meta data `colData(tse)`.
 
 ```{r}
 #| label: filter_samples
@@ -93,10 +92,10 @@ in. For instance, `ncols = Feces + Skin + Tongue = 4 + 3 + 2 = 9`.
 
 ## Subset by feature (row-wise)
 
-Similarly, here we will extract a subset containing only the features
-that belong to the phyla Actinobacteria and Chlamydiae, stored as
-`Phylum` within `rowData(tse)`. However, subsetting by feature implies
-a few more obstacles, such as the presence of `NA` elements and the
+Similarly, here we will extract a subset containing only the taxa (features)
+that belong to the phyla Actinobacteria and Chlamydiae. This information is stored in `Phylum` 
+column within `rowData(tse)` as well as in `tse`. Note that subsetting by feature comes with
+a few more obstacles than subsetting by sample, such as the presence of `NA` elements and the
 possible need for agglomeration.
 
 As previously, we would first like to see all the possible values that `Phylum`
@@ -118,17 +117,17 @@ in. For instance, `nrows = Actinobacteria + Chlamydiae = 1631 + 21 = 1652`.
 :::
 
 Depending on your research question, you might or might not need to
-agglomerate the data in the first place: if you want to find the
-abundance of each and every feature that belongs to Actinobacteria and
+agglomerate the data in the first place: For example, if you want to find the
+separate abundances of each and every taxon that belongs to Actinobacteria and
 Chlamydiae, agglomeration is not needed. However, if you want to find the total
-abundance of all features that belong to Actinobacteria or
+abundance of all taxa that belong to Actinobacteria or
 Chlamydiae, agglomeration is recommended (see
 [@sec-agglomeration] for details).
 
-Next, we _logically index_ across the rows of `tse` (make sure to leave
-the second index empty to select all columns) and filter for the
-features that fall in either Actinobacteria or Chlamydiae group. For this,
-we use the information on the samples from the metadata
+Next, we make a _logical index_ across the rows of `tse` (make sure to leave
+the second index empty to include all columns) and filter for the
+taxa that fall in either Actinobacteria or Chlamydiae group. For this,
+we use the information on the features (=taxa) from the feature metadata
 `rowData(tse)`.
 
 The first term with the `%in%` operator includes all the features
@@ -180,13 +179,27 @@ as well as Chlamydiae in different sites of the human body,
 
 ## Filtering based on library size {#sec-subset-library-size}
 
-As a preprocessing step, one might want to remove samples that do not
-exceed certain library size, i.e., total number of counts. Additionally,
-sometimes data might contain, samples that do not contain any of the
-features present in the dataset. This can occur, for example, after data
-subsetting. To focus only samples containing sufficient information, we
-might want to remove those instances. In this example, we are
-interested only those features that belong to Species _Achromatiumoxaliferum_.
+As a preprocessing step, one might want to remove samples below
+certain library size, i.e., total number of counts.
+
+```{r}
+#| label: subset_libsize
+
+#Inspect library sizes among samples:
+summary(colSums(assay(tse, "counts")))
+
+# Remove samples that have a library size smaller than 100 000
+tse_sub <- tse[ , tse$total > 100000]
+tse_sub
+```
+
+Additionally, in some cases, such as after subsetting to filter some features away,
+data might contain "empty" samples that do not contain any of the
+features present in the remaining dataset. To focus only samples containing 
+sufficient information, we might want to remove these instances. 
+
+In this example, we are first interested only those features (=taxa) that belong to 
+Species _Achromatiumoxaliferum_.
 
 ```{r}
 #| label: select_archaea
@@ -196,7 +209,7 @@ ind[is.na(ind)] <- FALSE
 tse_sub <- tse[ind, ]
 ```
 
-Then we can calculate the total number of counts in each sample.
+Then we can calculate the total number of counts in each sample in this subsetted data.
 
 ```{r}
 #| label: subset_empty
@@ -208,8 +221,9 @@ tse_sub <- addPerCellQCMetrics(tse_sub)
 tse_sub$total |> head()
 ```
 
-Now we can see that certain samples do not include any bacteria. We can remove
-those.
+We can see now that, after our feature-based subsetting step, many samples do not include any counts. 
+These are samples in the original data, that had no counts of _Achromatiumoxaliferum_.
+We can remove these empty samples from our data subset.
 
 ```{r}
 #| label: subset_empty2
@@ -219,38 +233,39 @@ tse_sub <- tse_sub[ , tse_sub$total != 0]
 tse_sub
 ```
 
-We have now subsetted the dataset so that it only includes samples containing
-the selected features. A similar approach can also be applied to filter features
+We have now subsetted the dataset so that it only includes selected features and only samples 
+containing these selected features. A similar approach can also be applied to filter features
 based on the samples they appear in, ensuring both dimensions of the data are
 relevant to your analysis.
 
 ## Filtering out zero-variance features
 
-In some datasets, certain features remain constant across all samples—they show
+In some datasets, certain features remain constant across all samples — that is, they show
 no variance. If our goal is to study or model microbial differences between
 groups, these zero-variance features hold no value. For a feature to reflect
 differences between groups, it must exhibit variability.
 
 By removing these invariant features, we can sharpen our focus on the more
-informative features. This not only reduces the number of comparisons but also
-helps our machine learning models learn from meaningful data without additional
-noise.
+informative features. This not only reduces the number of comparisons but can also
+help our models to learn from meaningful data without additional noise.
 
-To filter these features, we begin by calculating their standard deviation.
-Then we visualize the variances with histogram.
+To filter out invariant features, we begin by calculating the standard deviation across all features.
+Then we visualize the distribution of these variances as a histogram.
 
 ```{r}
 #| label: standard_deviation
 
-# Calculate
+# Calculate standard deviation of each feature's counts across all samples and add this as an additional
+column in the feature data (`rowData`)
 rowData(tse)[["sd"]] <- rowSds(assay(tse, "counts"))
-# Plot
+# Plot distribution of standard deviations across features 
+# Note: we are plotting the standard deviations in a log scale to see the breadth of their variance better
 hist(log(rowData(tse)[["sd"]]))
 ```
 
-From the histogram of feature variances, we can establish a sensible threshold
-for filtering. For example, using a threshold of 0 would effectively remove a
-large set of features that show no variance.
+Based on the histogram of feature count variances, we can decide a sensible threshold
+for filtering. Here, using a threshold of 0 (i.e., log-transformed standard deviation = 0)
+would effectively remove a large set of features that show no variance (i.e., standard deviation = 1).
 
 It's important to note that the data is on a log scale, meaning that a
 log-transformed value of 1 corresponds to 0 (i.e., log(1) = 0). This ensures
@@ -259,37 +274,33 @@ that features with zero variance are correctly identified and filtered out.
 ```{r}
 #| label: filter_sd
 
-th <- 1
-
 selected <- rowData(tse)[["sd"]] > 1
 tse_sub <- tse[selected, ]
 tse_sub
 ```
 
-Now the dataset includes the `r nrow(tse_sub)` features comapred to previous
-`r nrow(tse)`. The dataset now includes the features that vary. Note that
+After filtering, the dataset includes the `r nrow(tse_sub)` features comapred to previous
+`r nrow(tse)`. These are the features that vary at all. Note that
 this threshold choice depends on your research question, and this was a rather
-conservative choice retaining most of the features.
-
-After filtering, the dataset now contains `r nrow(tse_sub)` features, compared
-to the original `r nrow(tse)` features. This means we are left with features
-that exhibit variance. Keep in mind that the choice of threshold depends on the
-specific research question, and in this case, we opted for a rather conservative
-threshold that retains most features.
+conservative choice retaining most of the features. We could have also filtered features based
+on having variance above a certain non-zero threshold.
 
 ## Subset based on prevalence {#sec-subset_prev}
 
-We can subset the data based on prevalence using `subsetByPrevalent()`, which
-filters taxa that exceed a specified prevalence threshold, helping to remove
-rare features that may be artefacts. Conversely, `subsetByRare()` allows us to
-retain only taxa below the threshold, enabling a focus on rare features within
-the dataset.
+Sometimes we might want to subset the data based on feature prevalence, that is
+the commonness/rarity of a feature across the samples. We can do this by using 
+`subsetByPrevalent()`, which filters taxa that exceed a specified prevalence threshold. 
+This can be useful for example if we wish to remove rare taxa in our data, as these
+may be sequencing artefacts rather than real taxa.
+
+Conversely, `subsetByRare()` allows us to retain only features _below_ the prevalence threshold, 
+enabling a focus on rare features within the dataset.
 
 Here, we apply a prevalence threshold of 10% and a detection threshold of 1.
-A feature is considered detected if it has at least one count in a sample, and
+This means a feature is considered "detected" if it has at least one count in a sample, and
 prevalent if it is detected in at least 10% of the samples. The function
-`subsetByPrevalent()` retains the prevalent features, while `subsetByRare()`
-keeps the features that are not prevalent.
+`subsetByPrevalent()` retains the features more prevalent than this, while `subsetByRare()`
+keeps the features that are less prevalent (rarer) than this.
 
 ```{r}
 #| label: subset_by_rare
