@@ -18,7 +18,7 @@ You can split the data based on variables by using the functions
 [@sec-agglomeration].
 
 If you want to split the data based on a variable other than taxonomic rank, use 
-`splitOn()`. It works for row-wise and column-wise splitting, that is for features(rows) 
+`splitOn()`. It works for row-wise and column-wise splitting, that is for features (rows) 
 or samples (columns). Splitting the data may be useful, 
 for example, if you want to analyze different sample types separately:
 
