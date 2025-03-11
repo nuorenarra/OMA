@@ -185,8 +185,12 @@ certain library size, i.e., total number of counts.
 ```{r}
 #| label: subset_libsize
 
-#Inspect library sizes among samples:
-summary(colSums(assay(tse, "counts")))
+# Calculate the total number of counts in each sample in this data.
+library(scuttle)
+tse <- addPerCellQCMetrics(tse)
+tse$total |> head()
+# Inspect distribution of library sizes among samples:
+summary(tse$total)
 
 # Remove samples that have a library size smaller than 100 000
 tse_sub <- tse[ , tse$total > 100000]
@@ -209,13 +213,12 @@ ind[is.na(ind)] <- FALSE
 tse_sub <- tse[ind, ]
 ```
 
-Then we can calculate the total number of counts in each sample in this subsetted data.
+Then we can again calculate the total number of counts in each sample in this subsetted data.
 
 ```{r}
 #| label: subset_empty
 
 library(scuttle)
-
 tse_sub <- addPerCellQCMetrics(tse_sub)
 # List total counts of each sample
 tse_sub$total |> head()
