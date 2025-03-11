@@ -89,6 +89,8 @@ table(taxonomyRankEmpty(tse, rank = "Species"))
 information into a character vector of `length(x)`
 
 ```{r}
+#| label: get_taxonomy_labels
+
 getTaxonomyLabels(tse) |> head()
 ```
 
@@ -97,6 +99,8 @@ string with the following scheme `level:value`. If all levels are the same,
 this part is omitted, but can be added by setting `with.rank = TRUE`.
 
 ```{r}
+#| label: get_taxonomy_labels2
+
 # Select those features that have Species level info
 rank_found <- !taxonomyRankEmpty(tse, rank = "Species")
 getTaxonomyLabels(tse[rank_found,]) |> head()
