@@ -1,69 +1,27 @@
-# Network analysis 1: Covariation networks {#sec-network-learning}
+# Network learning & analysis {#sec-network-learning}
 
 ```{r setup, echo=FALSE, results="asis"}
 library(rebook)
 chapterPreamble()
 ```
 
-In microbiome science, tools of network analysis can be used in various contexts,
-such as a) using networks describing microbial covariatioin patterns to infer ecological associations,
-b) usong (multilevel) networks describing connectedness among hosts to model microbiome transmission and 
-c) using bipartite networks to map microbial taxa to specific functions or metabolic 
-pathways. Of these, the first case is by far the most common, and when people
-talk about "microbiome networks", they usually mean microbial covariation networks.
-These are two very different uses of network analysis: covariation (="ecological asociation") 
-networks comprise networks where nodes are microbial taxa and edges denote 
-associations, such as abundance correlation, between them, i.e., positive association when two 
-taxa often occur together in similar abundances across samples and negative associations 
-if the presence or high abundance of one taxon is associatied with the absence or lower 
-abundance of another. By contrast, microbial transmission networks comprise networks where
-nodes are individual microbiomes and edges between them denote connections through
-which microbes may spread between these microbial communities, as given by for 
-example spatial proximity between communities or, in the case of host-associated 
-microbiomes, genealogical trees or social contact networks among host individuals.
-
-Here we will walk through 1) how to construct and model microbial covariation 
-networks and 2) how to model microbial transmission networks.
-
-# Covariation networks 
-
-### Taxon covariation as a proxy of ecological interactions.
-
-Learning and analyzing microbial covariation networks is a common
+Learning and analyzing microbial association networks is another common
 exploratory data analysis approach aimed at understanding the complex
-ecological associations within microbial communities. These networks are often referred
-as "ecological networks" with the idea that covariation among taxa (how much their
-presence and abundances are positively or negatively correlated among sampels) tells
-something about their ecological interactions with each other, i.e., negative correlation
-between two taxa would denote competition between them and positive correlation would denote
-cooperation (mutual dependance) between them. However, caution is required in interpreting 
-patterns of covariation as proxies of ecological interaction. While these correlations can 
-arise through ecological interactions, they can also (and in fact more commonly) arise 
-through other processes, such as common selective forces or transmission. For example, 
-two taxa can end up being highly positively correlated across samples not only if they
-depend on each other but also if they both prefer similar environments (e.g., feed
-on similar nutrients, or thrive in similar pH) or end up in same places due to shared patterns
-of transmission. This is why we here call these networks "covariation networks" or 
-"ecological association networks", to interpret them more broadly than ecological
-interaction networks.
+interplay of microbial communities in their natural habitat. Microbial
+networks consist of nodes, representing microbial species or taxa, and edges
+expressing their associations. The mathematical representation of a network is
+the adjacency matrix, which has a non-zero entry for each edge in the network.
 
-Microbial covariation networks consist of nodes, representing microbial taxa, and 
-edges expressing their associations. The taxa at nodes can be species but it is also common
-to use higher level taxa, such as microbial genera. Note that covariation among higher level
-taxa is even more likely to represent ecological associations arising from common
-selective forces rather than direct interactions. 
-
-The mathematical representation of a network is the adjacency matrix, which has a 
-non-zero entry for each edge in the network. A typical workflow for estimating 
-a microbial network involves several steps, including data preprocessing, 
-estimating microbial associations, and transforming them into edge weights. 
-The resulting network can be analyzed using local network properties, such as 
-centrality measures, or global measures that describe the overall structure of 
-the network. Network plots provide further insight into the microbial community 
-covariation structure and allow for exploratory analysis of microbial relationships.
+A typical workflow for estimating a microbial network involves several steps,
+including data preprocessing, estimating microbial associations, and
+transforming them into edge weights. The resulting network can be analyzed
+using local network properties, such as centrality measures, or global measures
+that describe the overall structure of the network. Network plots provide
+further insight into the microbial community structure and allow for
+exploratory analysis of microbial relationships.
 
 In this chapter, we go through the complete workflow of constructing and
-analyzing a single microbial covariation network, step by step. A potential next analysis
+analyzing a single microbial network, step by step. A potential next analysis
 task is to compare networks between groups, such as patients and controls,
 different environmental conditions, or different time points. How to compare
 networks between two groups is explained in [@sec-network-comparison].
@@ -95,18 +53,17 @@ analysis methods are valid. A variance stabilizing transformation (vst) is
 also a suitable approach for normalizing microbial count data
 [@badri2020shrinkage].
 
-3.  **Association estimation:** A crucial step in network construction is
+3.  **Association estimation:** This is the crucial step in network learning
 to obtain statistical relations between the taxa. Common association measures
 include correlation, conditional dependence (which we will equate to partial
 correlation), and proportionality. Further information on these three types of
 association and their application can be found in [@sec-more-about-association].
-The following list gives a selection of compositionality aware approaches for 
-measuring taxon associations across samples:
+The following list gives a selection of compositionality aware approaches:
     + **Compositionality aware correlation estimation methods:**
       -   Pearson's correlation coefficient (+ normalization)
       -   Spearman's rank correlation coefficient (+ normalization)
       -   Covariance shrinkage ([corpcor](https://strimmerlab.github.io/software/corpcor/) package) (+ normalization)
-      -   SparCC (Can be used with sparse read county matrices containing zeros (see above). Implemented in [SpiecEasi](https://rdrr.io/github/zdk123/SpiecEasi/man/sparcc.html)); applied in [@sec-sparcc-correlation]
+      -   SparCC (implemented in [SpiecEasi](https://rdrr.io/github/zdk123/SpiecEasi/man/sparcc.html)); applied in [@sec-sparcc-correlation]
       -   CCREPE ([ccrepe](https://bioconductor.org/packages/release/bioc/html/ccrepe.html) package)
       -   CCLasso ([R code on GitHub](https://github.com/huayingfang/CCLasso))
     + **Compositionality aware measures of conditional dependence / partial correlation:**
@@ -157,7 +114,7 @@ compositional data and follows the neighborhood selection method introduced
 by @meinshausen2006high ("MB"). We will show how to apply the method directly,
 as well as how to use it in conjunction with the R package
 [NetCoMi](https://github.com/stefpeschel/NetCoMi), which is specifically
-designed for the construction and analysis of association networks for microbiome data.
+designed for the construction and analysis of networks for microbiome data.
 
 See [@sec-more-about-association] for a comparison of all three association
 types (correlation, partial correlation, and proportionality) with more
@@ -253,10 +210,10 @@ use the `SPRING` function directly to construct a conditional dependency graph.
 
 Neither zero replacement nor normalization (steps 1 and 2 in our workflow)
 are required because `SPRING` uses a modified clr (mclr) transformation that
-can handle zero counts, and the correlation estimation method itself 
-(rank-based correlation using sparse graphical modeling) can also deal with zeros in the data. 
-mclr is similar to the clr transformation except that mclr considers only the non-zero values. 
-More precisely, the geometric mean is derived from positive values only, and zero counts remain
+can handle zero counts, and the correlation estimation method itself can
+also deal with zeros in the data. mclr is similar to the clr transformation
+except that mclr considers only the non-zero values. More precisely, the
+geometric mean is derived from positive values only, and zero counts remain
 zero after the transformation. This approach is similar to the "robust clr"
 (rclr) transformation included in the `vegan` package, except that mclr
 applies a positive shift to all non-zero values to make them strictly positive.
@@ -269,9 +226,8 @@ error.
 
 `SPRING` uses the StARS ("Stability Approach to Regularization Selection")
 method [@liu2010stability] to obtain a sparse association matrix. Thus, also
-step 4 of our workflow is already included. Here, we set the StARS threshold to 0.05
-to get a very sparse graph so we can clearly see the differences between more 
-or less associated taxa.
+step 4 of our workflow is already included. We set the StARS threshold to 0.05
+to get a sparser graph.
 
 ```{r, message=FALSE, warning=FALSE}
 library(SPRING)
@@ -301,7 +257,7 @@ diag(spring_cor) <- 1
 As explained in [@sec-network-learning-workflow], the estimated associations
 are sparsified and transformed into dissimilarities, and finally transformed
 into similarities, which are the adjacency values. We write a function for
-these steps, which will reuse later.
+these steps, which will be reused later.
 
 Since `SPRING` already includes a sparsification approach, the `thresh`
 argument is not needed here, but will be needed in [@sec-more-about-association]
@@ -358,8 +314,8 @@ spring_graph <- transform_asso(spring_cor)$graph
 ### NetCoMi network {#sec-netcomi-spring}
 
 The [NetCoMi](https://github.com/stefpeschel/NetCoMi) [@peschel2021netcomi]
-package is specifically designed to construct, analyze, and compare covariation 
-networks for microbiome data and implements the complete workflow described in
+package is specifically designed to construct, analyze, and compare networks
+for microbiome data and implements the complete workflow described in
 [@sec-network-learning-workflow]. Instead of using several functions for
 each of the steps, `NetCoMi` provides a single function for network
 construction (`netConstruct()`), so the package streamlines the workflow
@@ -423,17 +379,17 @@ save(
 
 ## Network analysis with igraph {#sec-network-analysis}
 
-The computed network can be now analyzed using appropriate network analysos tools. 
-We will first use the `igraph` package to analyze the `SPRING` network we made first. 
-After this, the `micronet` object we constructed second will be analysed with NetCoMi's 
-`netAnalyze()` function
+The computed network is now analyzed using appropriate methods. We will first
+use the `igraph` package to analyze the `SPRING` network. NetCoMi's
+`netAnalyze()` function will be used later to analyze the constructed
+`microNet` object.
 
 ### Network plot
 
 To get an overview of the network structure, a first common analysis method is
 to plot the network. We here use the [igraph](https://r.igraph.org/) package,
 which is a state-of-the-art package for network analysis and visualization.
-Other packages that can be used for network plotting are the
+Other packages that could be used for network plotting are the
 [qgraph](https://rdrr.io/cran/qgraph/) package or the
 [ggnet2](https://briatte.github.io/ggnet/) package. Since we will use `igraph`
 for network analysis later on, we are using its plotting function here as well.
@@ -442,7 +398,7 @@ We use the Fruchterman-Reingold layout (a force-directed layout) for node
 placement. By placing strongly connected nodes close together and those with
 low edge weight far apart, this layout results in an easy-to-read network plot.
 
-We will set the node sizes to be proportional to a taxon's log10-transformed abundance,
+The node sizes are proportional to a taxon's log10-transformed abundance,
 which we previously added to the `tse` object, averaged across all samples.
 The values are rescaled to be visually distinguishable.
 
@@ -470,41 +426,10 @@ plot(netcomi_graph, layout = lay_fr, vertex.size = vsize,
 
 ### Centrality measures
 
-Centrality measures are metrics that express various aspects of the importance 
-of nodes within a network. For example, the most simple of centrality measure, "degree" 
-denotes the number of connections a given node has. Since our network is one where
-edges describe (positive) covariation between the abundances of any two taxa, 
-a node with high degree can be undertood as a taxon that occurs together with many other 
-taxa across samples or a taxon that occures in similar abundances with many other taxa across 
-samples. In other words, this would be a highly prevalent "generalist" taxon, that may occur in many
-different communities and perhaps have intermediate abundance, such that many others would
-have similar abundances.
-
-Note that the meaning of centrality metrics depends crucially on the definition of the edge in our
-network. For example, if we were to use networks where edges have signs and their weight is
-a mesure of the strength of either positie or negative association, then the degree of a node would
-also have a different meaning: The positive edge degree would be a measure similar to above
-but the negative edge degree would be a measure of how many other taxa our focal taxon
-has negative covariance with. A high negative degree here would be descriptive of a taxon that 
-has many competitors or rare environmental preferences, such that it would throve where many
-others would not.
-
-In addition to degree, other common measures of network centrality are:
-- Eigenvector centrality = how many connections a node has and how many connections those have etc.
-In the context of covariation networks a node with high eigenvector centrality would be one that
-can occur together with other taxa that also tend to occur together with many others.  This is descriptive
-of a taxon that is highly prevalent.
-- Betweenness = how much a node connects otherwise poorly connected networks. In the context
-of covariation networks a node with high betweenness would be one that can occur together
-with taxa that generally do not occur with each other. This is descriptive of a generalist
-strategy with a broad ecological niche.
-- Transitivity/ Local clustering coefficient = how much of the node's connections are connected 
-to each other. In the context of covariation networks a node with high transitivity would be one 
-that tends to occur together with other taxa that generally occur with each other. This is descriptive 
-of a specialist strategy with a narrow ecological niche.
-
-The `igraph` package provides functions 
-to compute these measures. We wrap a function around the code to reuse it later.
+Centrality measures express the importance of nodes within the network. Common
+measures are the degree, betweenness, closeness, and eigenvector centrality.
+The `igraph` package provides functions to compute these measures. We wrap a
+function around the code to reuse it later.
 
 ```{r}
 get_centr <- function(graph_obj) {
