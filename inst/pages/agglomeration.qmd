@@ -174,7 +174,7 @@ altExpNames(tse)
 ## Aggregate data based on variable
 
 The `agglomerateByRank()` function aggregates data based on `rowData`, 
-that is, the agglomerates are made based on the feature data, such as taxonomy
+that is, the agglomerates are made based on features, such as taxonomy
 information. Alternatively, you can also use `agglomerateByVariable()`
 to aggregate the data based on `rowData`. In this case the agglomerates 
 are made based on the sample variables. 
@@ -186,7 +186,7 @@ similarly to feature aggregation, but the `by` parameter must be set to "rows."
 ::: {.callout-note}
 ## Note
 
-Note that a dataset might contain taxa with the same lower-level rank, even
+Note that a feature dataset might contain taxa with the same lower-level rank, even
 if their higher-level ranks differ. For this reason, `agglomerateByVariable()` should not
 be used for aggregating taxonomy ranks.
 :::
@@ -206,23 +206,25 @@ to agglomerate data effectively.
 
 ## Agglomerate based on prevalence {#sec-agglomerate_prev}
 
-[@sec-subset_prev] demonstrated how to select only prevalent or rare features.
-In some cases, it might be beneficial to combine these features that would
-otherwise be removed. The function `agglomerateByPrevalence()` accomplishes
-this by merging filtered features into a single feature called "Other" by
-default, preventing unnecessary loss of information. This is particularly
-useful for retaining features that may still represent a significant proportion
-when combined.
+[@sec-subset_prev] demonstrated how to select data with only prevalent or rare features.
+In some cases, it might be beneficial to combine the features that would
+otherwise be removed. For example, instead of filtering out rare taxa, we can
+combine the reads from all these rare taxa under a new feature which we can call "Rare taxa".
+The function `agglomerateByPrevalence()` accomplishes this by merging filtered 
+features into a single feature called "Other" by default, preventing unnecessary 
+loss of information. This is particularly useful when working with left-skewed feature data, 
+such as soil microbiome data sets where rare taxa may represent a significant 
+proportion of the reads when combined.
 
-Here, we demonstrate how to agglomerate the data using prevalence thresholds
+Here, we demonstrate how to agglomerate the data using prevalence and abundance thresholds
 of 20% and 0.1%, respectively. This means that for a feature to be considered
-detected in a sample, its abundance must exceed 0.1%. Furthermore, the feature
-must be present in at least 20% of samples to be retained in the dataset rather
-than placed in the "Other" group.
+detected in a sample, its relative abundance must exceed 0.1% and after this, the feature
+must be detected in at least 20% of samples. Taxa that do not meet these criteria 
+are combined in the "Other" group.
 
 To use relative abundances for the detection threshold, we must first transform
-the data to relative abundances. We will let the [@sec-assay-transform] to
-introduce transformations in more detail.
+the data to relative abundances (aka normalise as proportions).
+These kind of transformations are introduce in more detail in [@sec-assay-transform].
 
 ```{r}
 #| label: agg_prevalence
@@ -239,10 +241,10 @@ tse_prev <- agglomerateByPrevalence(
 tse_prev
 ```
 
-We have now successfully agglomerated the data based on prevalence. If we are
-interested in prevalent Phyla, we can certainly first agglomerate the data by
-Phylum rank and then by prevalence. The function `agglomerateByPrevalence()`
-allows us to accomplish both tasks simultaneously.
+We have now successfully agglomerated the data based on prevalence. Similarly, if we 
+were interested in only the most prevalent Phyla, we can certainly first agglomerate the data by
+Phylum rank and then by prevalence, combining the rarer Phyla into one category. 
+In fact, the function `agglomerateByPrevalence()` allows us to accomplish both tasks simultaneously.
 
 ```{r}
 #| label: agg_prev_phylum
