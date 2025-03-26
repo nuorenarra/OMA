@@ -83,7 +83,9 @@ references.
    ecological association (either competitive exclusion with each other of
    different ecological niche preferences). Conversely, looking for negative 
    correlations in their relative abundances would not be a meaningful measure
-   of  ecological associations.
+   of  ecological associations. Moreover, it has been used in machine learning
+   classification models with a good performance [@Giliberti2022,
+   @Karwowska2024].
 
  * **rank**: Rank transformation replaces each feature abundance value by its
    rank. Similar to relative rank transformation (rrank) which uses relative ranks.
