@@ -53,7 +53,23 @@ These example solutions are related to exercises in [@sec-convert].
 #| label: convert
 #| code-fold: true
 #| code-summary: "Show the solution"
-    
+
+# Load example dataset
+library(mia)
+data("GlobalPatterns", package = "mia")
+tse <- GlobalPatterns
+
+# Convert to Phyloseq and reconvert to a new Dataset
+ps <- convertToPhyloseq(tse)
+tse_new <- convertFromPhyloseq(ps)
+
+# Save the reconverted file to a RDS file and read it
+saveRDS(tse_new, "tse.rds")
+tse_read <- readRDS("tse.rds")
+
+# Converting TreeSE to long format and writing it in a CSV file
+lf <- meltSE(tse_read)
+write.csv(lf, "LongFormat_tse.csv")
 ```
 
 ## Taxonomic information
