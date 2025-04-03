@@ -31,7 +31,7 @@ These example solutions are related to exercises in [@sec-containers].
 #| label: containers
 #| code-fold: true
 #| code-summary: "Show the solution"
-    
+
 ```
 
 ## Import
@@ -92,7 +92,48 @@ These example solutions are related to exercises in [@sec-datawrangling].
 #| label: wrangling
 #| code-fold: true
 #| code-summary: "Show the solution"
-    
+
+# Load first example dataset
+library(mia)
+data("enterotype", package = "mia")
+tse <- enterotype
+
+# Visualize column metadata
+colData(tse) |> head()
+
+# Create variable 'group' containing 3 random classifications for each entry
+tse[["group"]] <- sample(
+    c("group_1", "group_2", "group_3"),
+    ncol(tse),
+    replace = TRUE
+)
+
+# Plot how groups are distributed
+library(miaViz)
+plotBarplot(tse, col.var = "group")
+
+# Split groups into two different tse objects and outputs a list
+tse_list <- splitOn(tse, by = 2, group = "group")
+
+# Count numbers of entries in the group
+tse_list[[1]][["group"]] |> table()
+tse_list[[2]][["group"]] |> table()
+tse_list[[3]][["group"]] |> table()
+
+# Sum the abundances correspondent to each group and
+# merge them back into a single tse object
+tse_list <- lapply(tse_list, function(x){
+    mat <- assay(x, "counts")
+    sum_val <- sum(mat)
+    x[["summed_value"]] <- sum_val
+    return(x)
+})
+tse <- unsplitOn(tse_list)
+
+# Load second example dataset and merges them
+data("GlobalPatterns")
+tse <- mergeSEs(tse, GlobalPatterns)
+colData(tse)
 ```
 
 ## Agglomeration
