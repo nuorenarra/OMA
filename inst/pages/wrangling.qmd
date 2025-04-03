@@ -243,7 +243,8 @@ each group in separate `TreeSE`.
 
 8. Combine the list back to single `TreeSE`.
 
-9. Load second dataset and merge it with the first one. Explore the data.
+9. Load another dataset from [@sec-example-data] and merge it with the one
+You've been using. Explore the data.
 
 Useful functions:
 
