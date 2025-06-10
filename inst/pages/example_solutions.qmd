@@ -176,7 +176,45 @@ These example solutions are related to exercises in [@sec-quality-control].
 #| label: qc
 #| code-fold: true
 #| code-summary: "Show the solution"
-    
+
+# Load example dataset
+library(mia)
+library(miaViz)
+library(scuttle)
+data("GlobalPatterns")
+tse <- GlobalPatterns
+
+# Plot counts with a histogram
+plotHistogram(tse, assay.type = "counts")
+
+# Add prevalence to rowData
+tse <- addPrevalence(tse)
+
+# Plot the distribution of prevalence values
+plotHistogram(tse, row.var = "prevalence")
+
+# Add library size to colData
+tse <- addPerCellQCMetrics(tse)
+# And visualize them
+plotHistogram(tse, col.var = "total")
+
+# Plot categorical values with a barplot
+plotBarplot(tse, col.var = "SampleType")
+
+# Available taxonomic ranks
+taxonomyRanks(tse)
+
+# Checks the dominance of genera
+summarizeDominance(tse, rank = "Genus")
+
+# Get the most prevalent taxa
+getPrevalent(tse, rank = "Genus", prevalence = 0.2, detection = 1)
+
+# Get the most abundant taxa based on their median abundance
+getTop(tse, method = "median")
+
+# Visualzie the most prevalent features
+plotAbundanceDensity(tse)
 ```
 
 ## Subsetting
