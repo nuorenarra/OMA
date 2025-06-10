@@ -215,7 +215,37 @@ These example solutions are related to exercises in [@sec-agglomeration].
 #| label: agglomeration
 #| code-fold: true
 #| code-summary: "Show the solution"
-    
+
+# Load packages and dataset
+library(mia)
+data("GlobalPatterns")
+tse <- GlobalPatterns
+
+# Show taxonomic ranks
+taxonomyRanks(tse)
+
+# Show the unique values for a rank
+getUnique(tse, rank = "Phylum")
+
+# Agglomerate by rank and shows # of rows
+tse_agglomerated <- agglomerateByRank(tse, rank = "Phylum")
+nrow(tse_agglomerated)
+
+# Show rowData
+rowData(tse_agglomerated)
+
+# Agglomerate by all ranks and shows one
+tse_all_ranks <- agglomerateByRanks(tse)
+altExpNames(tse_all_ranks)
+altExp(tse_all_ranks, "Phylum")
+
+# Agglomerate by prevalence
+tse_prevalence <- agglomerateByPrevalence(tse)
+altExp(tse, "prevalent") <- agglomerateByPrevalence(tse)
+
+# Show column variables and merges the data based on one
+colData(tse) |> colnames()
+tse_variable <- agglomerateByVariable(tse, group = "SampleType", by = "cols")
 ```
 
 ## Transformation
