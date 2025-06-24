@@ -9,22 +9,22 @@ In [@sec-treese_subsetting], we covered how to select features from the dataset.
 Agglomeration, on the other hand, involves combining data points into broader feature
 categories by summing their values. For instance, if you have counts for
 individual species, you might agglomerate them into groups based on the
-family or genus of each species. This means you would add up the counts of all species within
+family of each species. This means you would add up the counts of all species within
 a particular family to get a single value that represents that family. While
-this method simplifies your dataset, it means you lose the specific information 
-about individual species. It can, however, be useful in and highlighting overall trends.
+this method simplifies your dataset and you lose the specific information 
+about individual species, it can, however, be useful in and highlighting overall trends.
 
-The choice between subsetting (samples or features) and agglomeration (samples of features) 
+The choice between subsetting and agglomeration
 depends on your research goals and the type of insights you want to gain from your data.
 For example, if you are interested in comparing compositions of two types of microbiomes
-(e.g., gut microbiome and soil microbiome),you might want to first examine/plot their taxonomic 
-profiles at the level of Phyla, of Families, rather than species, to get an idea of their 
+(e.g., gut microbiome and soil microbiome), you might want to first examine/plot their taxonomic 
+profiles at the level of phyla, of families, rather than species, to get an idea of their 
 broad similarities or differences. Agglomeration is most often used to reduce the number of features, 
 especially in sequencing data, where there may not be enough resolution to reliably differentiate 
 between closely related species. By combining data at higher taxonomic levels, allows you to 
 focus on broader patterns and trends in the community while managing the complexity of the
 dataset. Similarly, in addition to aggregating features to higher categories, you  might want 
-to aggregate samples within the give sample type, to examine/plot these broad differences across sample 
+to aggregate samples within the given sample type, to examine these broad differences across sample 
 types rather than samples.
 
 ::: {.callout-note}
