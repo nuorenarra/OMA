@@ -17,12 +17,12 @@ about individual species, it can, however, be useful in and highlighting overall
 The choice between subsetting and agglomeration
 depends on your research goals and the type of insights you want to gain from your data.
 For example, if you are interested in comparing compositions of two types of microbiomes
-(e.g., gut microbiome and soil microbiome), you might want to first examine/plot their taxonomic 
-profiles at the level of phyla, of families, rather than species, to get an idea of their 
+(e.g., gut microbiome and soil microbiome), you might want to first examine their taxonomic 
+profiles at the level of phyla or families, rather than species, to get an idea of their 
 broad similarities or differences. Agglomeration is most often used to reduce the number of features, 
 especially in sequencing data, where there may not be enough resolution to reliably differentiate 
 between closely related species. By combining data at higher taxonomic levels, allows you to 
-focus on broader patterns and trends in the community while managing the complexity of the
+focus on broader patterns in the community while managing the complexity of the
 dataset. Similarly, in addition to aggregating features to higher categories, you  might want 
 to aggregate samples within the given sample type, to examine these broad differences across sample 
 types rather than samples.
