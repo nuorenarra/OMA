@@ -66,7 +66,8 @@ references.
 
  * **hellinger**: Hellinger transformation is equal to the square root of
    relative abundances. This ecological transformation can be useful
-   if we are interested in changes in relative abundances.
+   when the focus is on how species proportions vary across samples, rather
+   than on absolute counts.
 
  * **log, log2, log10**: Logarithmic transformations, used e.g. to
    reduce data skewness. With compositional data, the clr (or rclr)
