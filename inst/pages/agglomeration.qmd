@@ -176,8 +176,7 @@ altExpNames(tse)
 The `agglomerateByRank()` function aggregates data based on `rowData`, 
 that is, the agglomerates are made based on features, such as taxonomy
 information. Alternatively, you can also use `agglomerateByVariable()`
-to aggregate the data based on `rowData`. In this case the agglomerates 
-are made based on the sample variables. 
+to aggregate the data. 
 
 `agglomerateByVariable()` is designed to aggregate data based on other
 criteria than taxa, such as sample groups or clusters. The function operates 
