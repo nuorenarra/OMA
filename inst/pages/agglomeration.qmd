@@ -46,8 +46,9 @@ tse <- GlobalPatterns
 ## Agglomerate based on taxonomy rank
 
 One of the main applications of taxonomic information in sequencing data
-is to agglomerate counts (such as ASV counts) to specific taxonomic levels 
-and track the influence of changing conditions through these levels. For this `mia` contains the
+is to agglomerate counts (such as ASV counts) to specific taxonomic levels
+and to model how different sample-specific variables may influence the feature
+composition at different taxonomic levels. For this mia contains the
 `agglomerateByRank()` function.
 
 At its simplest, the function takes a `TreeSE` object as input and outputs a
