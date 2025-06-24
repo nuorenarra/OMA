@@ -58,17 +58,13 @@ book:
         - pages/network_comparison.qmd
     - part: "Multiomics"
       chapters:
+        - pages/multiomics.qmd
         - pages/cross_correlation.qmd
         - pages/multiassay_ordination.qmd
         - pages/integrated_learner.qmd
     - part: "Machine learning & statistical modeling"
       chapters:
         - pages/machine_learning.qmd
-    - part: "Workflows"
-      chapters:
-        - pages/introductory_workflow.qmd
-        - pages/introductory_workflow_french_version.qmd
-        - pages/introductory_workflow_dutch_version.qmd
     - part: "Training"
       chapters:
         - pages/training.qmd

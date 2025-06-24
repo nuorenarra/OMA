@@ -232,8 +232,8 @@ tse <- transformAssay(
 
 To incorporate phylogenetic information, one can apply the phylogenetic
 isometric log-ratio (PhILR) transformation [@Silverman2017]. Unlike standard
-transformations, PhILR accounts for the genetic relationships between taxa.
-This is important because closely related species often share similar
+transformations, PhILR accounts for the genetic relationships between taxonomic
+features. This is important because closely related species often share similar
 properties, which traditional transformations fail to capture.
 
 ```{r}
